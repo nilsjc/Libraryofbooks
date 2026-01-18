@@ -1,0 +1,105 @@
+You are tasked to build an API application that will be used 
+by a library to keep track of their books as well as track borrowers. 
+Normally, librarians want to keep track of the books they have.
+
+The application should use an **SQL-based database** and 
+the API will be accessed through HTTP and should enable 
+library proprietors to answer questions such as:
+
+
+- What are the most borrowed books?
+- How many copies of a particular book are currently borrowed/available?
+- Which users borrowed the most books in a given time frame?
+- What books has an individual borrowed in each time frame?
+- What other books were borrowed by individuals that borrowed a particular book?
+- Roughly, what is the read rate (pages per day) for a particular book, assuming users start reading a book as soon as they borrow it and return it as soon as they are done reading it?
+
+
+skapa enhetstester
+
+IDatabaseService
+{
+	Task<int> InsertBook(BookDTO book); // returns bookId
+	Task<int> InsertUser(UserDTO user); // returns userId
+	Task<bool> StartLoan(int bookId, int userId); // returns true or false depending if sucessful
+	Task<bool> StopLoan(int bookId); // returns true or false depending if sucessful
+	Task GetBookInfoByTitle(string title);
+	Task GetBookInfoById(int bookId);
+	Task<int> GetUserId(string userName);
+	Task<userInfoDTO> GetUserInfo(int userId);
+	Task GetLoanInfo(int loanId);
+	Task<loanSpanInfoDTO> GetTimeSpanInfo(dateTime date, int days);
+	Task<loanSpanInfoDTO> GetTimeSpanInfo(dateTime startDate, dateTime stopDate);
+
+userInfoDTO:
+- name of user
+- List<loanSpanInfoDTO>
+
+singleBookInfoDto
+- name of book
+- 
+
+bookInfoDTO:
+- name of book
+- List<loanInfoDTO>
+
+loanSpanInfoDTO:  // history of loan specific book
+- name of book
+- startDate
+- endDate
+- days
+
+
+book:
+-----
+id (single value)
+name
+
+user:
+-----
+id (single value)
+name
+
+loans:
+------
+id (single value) int
+book id int
+user id int
+time for start loan datetime
+time for end loan datetime
+actual/historical boolean
+
+actual loans:
+-------------
+loans id
+
+historical loans:
+-----------------
+loans id
+total days int 
+-----------------
+arkitektur:
+
+MySolution
+│
+├── MyApi                (Web API)
+├── MyData               (Class Library – EF Core + repositories)
+└── MyTests
+
+MySolution
+│
+├── MyApi                (ASP.NET Web API)
+├── MyApplication        (Class Library – tjänster, use cases, interfaces)
+├── MyDomain             (Class Library – entiteter, logik, interfaces)
+├── MyInfrastructure     (Class Library – EF Core, databasåtkomst, implementationer)
+└── MyTests              (xUnit/NUnit/MSTest)
+
+
+
+
+Unit of work
+
+SELECT id, poäng
+FROM poängtabell
+ORDER BY poäng DESC
+LIMIT 10;
