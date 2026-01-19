@@ -27,5 +27,8 @@ namespace LibraryDataService.Services
         // Roughly, what is the read rate (pages per day) for a particular book, assuming users start reading a book as soon as they borrow it and return it as soon as they are done reading it?
         Task<int> ReadRate(BookDTO book);
 
+        Task<List<LoanDTO>> GetLoansByBook(int bookId, DateTime? start, DateTime? end);
+        Task<List<LoanDTO>> GetLoansByUser(int userId, DateTime? start, DateTime? end);
+        Task<List<(int UserId, int LoanCount)>> GetUserLoanCounts(DateTime? start, DateTime? end);
     }
 }

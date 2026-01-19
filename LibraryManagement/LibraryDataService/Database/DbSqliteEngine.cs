@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using LibraryDataService.Models;
 using LibraryDataService.Results;
@@ -60,7 +56,7 @@ namespace LibraryDataService.Database
         }
         public async Task InsertBook(Book book)
         {
-            using var connection = new SqliteConnection("Data source=library.db");
+            using var connection = new SqliteConnection($"Data source={DbName}");
             connection.Open();
             var command = connection.CreateCommand();
             command.CommandText =
@@ -76,7 +72,7 @@ namespace LibraryDataService.Database
         }
         public async Task InsertUser(string userName)
         {
-            using var connection = new SqliteConnection("Data source=library.db");
+            using var connection = new SqliteConnection($"Data source={DbName}");
             connection.Open();
             var command = connection.CreateCommand();
             command.CommandText =
@@ -90,7 +86,7 @@ namespace LibraryDataService.Database
         }
         public async Task<LoanOperationResult> StartLoan(int bookId, int userId)
         {
-            using var connection = new SqliteConnection("Data source=library.db");
+            using var connection = new SqliteConnection($"Data source={DbName}");
             connection.Open();
             var command = connection.CreateCommand();
             // kolla om användaren existerar
@@ -151,7 +147,7 @@ namespace LibraryDataService.Database
         }
         public async Task<LoanOperationResult> StopLoan(int bookId)
         {
-            using var connection = new SqliteConnection("Data source=library.db");
+            using var connection = new SqliteConnection($"Data source={DbName}");
             connection.Open();
             
             using var transaction = connection.BeginTransaction();
@@ -196,9 +192,9 @@ namespace LibraryDataService.Database
                 throw;
             }
         }
-        public async Task<Book> GetBookInfoByTitle(string title)
+        public async Task<IEnumerable<Book>> GetBooksByTitle(string title)
         {
-            using var connection = new SqliteConnection("Data source=library.db");
+            using var connection = new SqliteConnection($"Data source={DbName}");
             connection.Open();
             var command = connection.CreateCommand();
             command.CommandText =
@@ -209,21 +205,21 @@ namespace LibraryDataService.Database
             ";
             command.Parameters.AddWithValue("$title", title);
             using var reader = command.ExecuteReader();
-            if (reader.Read())
+            var books = new List<Book>();
+            while (reader.Read())
             {
-                var book = new Book(
+                books.Add(new Book(
                     reader.GetInt32(0),
                     reader.GetString(1),
                     reader.GetInt32(2),
                     reader.GetInt32(3)
-                );
-                return book;
+                ));
             }
-            return null;
+            return books;
         }
         public async Task<Book> GetBookInfoById(int bookId)
         {
-            using var connection = new SqliteConnection("Data source=library.db");
+            using var connection = new SqliteConnection($"Data source={DbName}");
             connection.Open();
             var command = connection.CreateCommand();
             command.CommandText =
@@ -248,7 +244,7 @@ namespace LibraryDataService.Database
         }
         public async Task<int> GetUserId(string userName)
         {
-            using var connection = new SqliteConnection("Data source=library.db");
+            using var connection = new SqliteConnection($"Data source={DbName}");
             connection.Open();
             var command = connection.CreateCommand();
             command.CommandText =
@@ -267,7 +263,7 @@ namespace LibraryDataService.Database
         }
         public async Task<UserInfo> GetUserInfo(int userId)
         {
-            using var connection = new SqliteConnection("Data source=library.db");
+            using var connection = new SqliteConnection($"Data source={DbName}");
             connection.Open();
             var command = connection.CreateCommand();
             command.CommandText =
@@ -291,7 +287,7 @@ namespace LibraryDataService.Database
 
         public async Task<Loan> GetLoanInfo(int loanId)
         {
-            using var connection = new SqliteConnection("Data source=library.db");
+            using var connection = new SqliteConnection($"Data source={DbName}");
             connection.Open();
             var command = connection.CreateCommand();
             command.CommandText =
@@ -319,7 +315,7 @@ namespace LibraryDataService.Database
 
         public async Task<IEnumerable<int>> GetMostPopularBooksId(int topN)
         {
-            using var connection = new SqliteConnection("Data source=library.db");
+            using var connection = new SqliteConnection($"Data source={DbName}");
             connection.Open();
             var command = connection.CreateCommand();
             command.CommandText =
@@ -338,6 +334,151 @@ namespace LibraryDataService.Database
                 popularBookIds.Add(reader.GetInt32(0));
             }
             return popularBookIds;
+        }
+
+        public async Task<IEnumerable<Book>> LoanedBooksHistoryByUser(int userId, DateTime? start, DateTime? end)
+        {
+            using var connection = new SqliteConnection($"Data source={DbName}");
+            connection.Open();
+            var command = connection.CreateCommand();
+            command.CommandText =
+            @"
+                SELECT BookId, Title, Author, ISBN
+                FROM Books
+                WHERE BookId IN (
+                    SELECT BookId
+                    FROM HistoricLoans
+                    WHERE UserId = $userId
+                    AND ($start IS NULL OR StartDate >= $start)
+                    AND ($end IS NULL OR StopDate <= $end)
+                );
+            ";
+            command.Parameters.AddWithValue("$userId", userId);
+            command.Parameters.AddWithValue("$start", start);
+            command.Parameters.AddWithValue("$end", end);
+            using var reader = command.ExecuteReader();
+            var books = new List<Book>();
+            while (reader.Read())
+            {
+                books.Add(new Book(
+                    reader.GetInt32(0),
+                    reader.GetString(1),
+                    reader.GetInt32(2),
+                    reader.GetInt32(3)
+                ));
+            }
+            return books;
+        }
+
+        public async Task<int> GetLoanCountForBook(string title, DateTime? start, DateTime? end)
+        {
+            using var connection = new SqliteConnection($"Data source={DbName}");
+            connection.Open();
+            var command = connection.CreateCommand();
+            
+            command.CommandText =
+            @"
+                SELECT COUNT(*) AS LoanCount
+                FROM HistoricLoans hl
+                INNER JOIN Books b ON hl.BookId = b.BookId
+                WHERE b.Title = $title
+                AND ($start IS NULL OR hl.StartDate >= $start)
+                AND ($end IS NULL OR hl.StopDate <= $end);
+            ";
+            command.Parameters.AddWithValue("$title", title);
+            command.Parameters.AddWithValue("$start", start);
+            command.Parameters.AddWithValue("$end", end);
+            
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                return reader.GetInt32(0);
+            }
+            return 0;
+        }
+
+        public async Task<int> GetLoanDaysForBook(string title, DateTime? start, DateTime? end)
+        {
+            using var connection = new SqliteConnection($"Data source={DbName}");
+            connection.Open();
+            var command = connection.CreateCommand();
+            
+            command.CommandText =
+            @"
+                SELECT CAST(SUM(JULIANDAY(hl.StopDate) - JULIANDAY(hl.StartDate)) AS INTEGER) AS LoanDays
+                FROM HistoricLoans hl
+                INNER JOIN Books b ON hl.BookId = b.BookId
+                WHERE b.Title = $title
+                AND ($start IS NULL OR hl.StartDate >= $start)
+                AND ($end IS NULL OR hl.StopDate <= $end);
+            ";
+            command.Parameters.AddWithValue("$title", title);
+            command.Parameters.AddWithValue("$start", start);
+            command.Parameters.AddWithValue("$end", end);
+            
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                return reader.IsDBNull(0) ? 0 : reader.GetInt32(0);
+            }
+            return 0;
+        }
+
+        public async Task<IEnumerable<Book>> GetBooksInfoByIds(IEnumerable<int> bookIds)
+        {
+            using var connection = new SqliteConnection($"Data source={DbName}");
+            connection.Open();
+            var command = connection.CreateCommand();
+            command.CommandText =
+            @"
+                SELECT BookId, Title, TotalPages, Copy
+                FROM Books
+                WHERE BookId IN ($bookIds);
+            ";
+            command.Parameters.AddWithValue("$bookIds", string.Join(",", bookIds));
+            using var reader = command.ExecuteReader();
+            var books = new List<Book>();
+            while (reader.Read())
+            {
+                books.Add(new Book(
+                    reader.GetInt32(0),
+                    reader.GetString(1),
+                    reader.GetInt32(2),
+                    reader.GetInt32(3)
+                ));
+            }
+            return books;
+        }
+
+
+        // How many copies of a particular book are currently borrowed?
+        public async Task<IEnumerable<Book>> GetCurrentlyBorrowedCopiesCount(string title)
+        {
+            using var connection = new SqliteConnection($"Data source={DbName}");
+            connection.Open();
+            var command = connection.CreateCommand();
+            
+            command.CommandText =
+            @"
+                SELECT COUNT(*) AS BorrowedCount
+                FROM Loans l
+                INNER JOIN Books b ON l.BookId = b.BookId
+                WHERE b.Title = $title AND l.StopDate IS NULL;
+            ";
+            command.Parameters.AddWithValue("$title", title);
+            
+            using var reader = command.ExecuteReader();
+            var books = new List<Book>();
+            while (reader.Read())
+            {
+                books.Add(new Book(
+                    reader.GetInt32(0),
+                    reader.GetString(1),
+                    reader.GetInt32(2),
+                    reader.GetInt32(3)
+                ));
+            }
+            return books;
         }
     }
 }

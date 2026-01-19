@@ -18,14 +18,14 @@ namespace LibraryManagement.IntegrationTests
     public class CaseUsingEFTest
     {
         
-        [Fact]
-        public void MostBorrowedBooks()
-        {
-            using SqliteConnection? connection = null;
-            var dbService = CreateTestDatabaseService(connection);
-            Assert.True(true);
+        // [Fact]
+        // public void MostBorrowedBooks()
+        // {
+        //     using SqliteConnection? connection = null;
+        //     var dbService = CreateTestDatabaseService(connection);
+        //     Assert.True(true);
 
-        }
+        // }
 
         [Fact]
         public void CopiesBorrowedAvailable()
@@ -57,25 +57,25 @@ namespace LibraryManagement.IntegrationTests
             Assert.True(true);
         }
 
-        public static EFDatabaseService CreateTestDatabaseService(SqliteConnection? connection)
-        {
-            connection = new SqliteConnection("DataSource=:memory:");
-            connection.Open();
+        // public static EFDatabaseService CreateTestDatabaseService(SqliteConnection? connection)
+        // {
+        //     connection = new SqliteConnection("DataSource=:memory:");
+        //     connection.Open();
 
-            var services = new ServiceCollection();
-            services.AddDbContextFactory<LibraryDbContext>(opts =>
-            {
-                opts.UseSqlite(connection);
-            });
-            var provider = services.BuildServiceProvider();
+        //     var services = new ServiceCollection();
+        //     services.AddDbContextFactory<LibraryDbContext>(opts =>
+        //     {
+        //         opts.UseSqlite(connection);
+        //     });
+        //     var provider = services.BuildServiceProvider();
 
-            var factory = provider.GetRequiredService<IDbContextFactory<LibraryDbContext>>();
-            using (var ctx = factory.CreateDbContext())
-            {
-                ctx.Database.EnsureCreated();
-            }
+        //     var factory = provider.GetRequiredService<IDbContextFactory<LibraryDbContext>>();
+        //     using (var ctx = factory.CreateDbContext())
+        //     {
+        //         ctx.Database.EnsureCreated();
+        //     }
 
-            return new EFDatabaseService(factory);
-        }
+        //     return new EFDatabaseService(factory);
+        // }
     }
 }
