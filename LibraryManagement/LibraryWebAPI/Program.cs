@@ -1,5 +1,6 @@
 using LibraryDataService.Database;
 using LibraryDataService.Services;
+using LibraryWebAPI.Endpoints;
 using LibraryWebAPI.GraphQL.Queries;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,7 +32,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Map endpoints
+app.MapLibraryEndpoints();
+
+
 // Map GraphQL endpoint
 app.MapGraphQL();
+
 
 app.Run();

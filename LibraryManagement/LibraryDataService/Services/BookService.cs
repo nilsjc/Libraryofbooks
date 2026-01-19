@@ -1,15 +1,27 @@
+using LibraryDataService.Database;
 using LibraryDataService.DTOs;
 
 namespace LibraryDataService.Services
 {
     public class BookService : IBookService
     {
-        public Task<BookDTO> GetBook(string title)
+        IDatabaseService _databaseService;
+        public BookService(IDatabaseService databaseService)
         {
-            throw new NotImplementedException();
+           _databaseService = databaseService; 
+        }
+        public async Task<IEnumerable<BookDTO>> GetBookAsync(string title)
+        {
+            var result = await _databaseService.GetBooksByTitle(title);
+            return result.Select(r => new BookDTO(r.Title)
+            {
+                Title = r.Title,
+                TotalPages = r.TotalPages,
+                Copy = r.Copy
+            });
         }
 
-        public Task InsertBook(BookDTO book)
+        public Task InsertBookAsync(BookDTO book)
         {
             throw new NotImplementedException();
         }

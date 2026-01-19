@@ -201,9 +201,9 @@ namespace LibraryDataService.Database
             @"
                 SELECT BookId, Title, TotalPages, Copy
                 FROM Books
-                WHERE Title = $title;
+                WHERE Title LIKE $title;
             ";
-            command.Parameters.AddWithValue("$title", title);
+            command.Parameters.AddWithValue("$title", $"%{title}%");
             using var reader = command.ExecuteReader();
             var books = new List<Book>();
             while (reader.Read())
@@ -343,7 +343,7 @@ namespace LibraryDataService.Database
             var command = connection.CreateCommand();
             command.CommandText =
             @"
-                SELECT BookId, Title, Author, ISBN
+                SELECT BookId, Title, TotalPages, Copy
                 FROM Books
                 WHERE BookId IN (
                     SELECT BookId

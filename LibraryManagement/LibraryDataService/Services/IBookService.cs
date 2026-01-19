@@ -4,8 +4,8 @@ namespace LibraryDataService.Services
 {
     public interface IBookService
     {
-        Task InsertBook(BookDTO book);
-        Task<BookDTO> GetBook(string title);
+        Task InsertBookAsync(BookDTO book);
+        Task<IEnumerable<BookDTO>> GetBookAsync(string title);
         
     }
 }
